@@ -6,17 +6,19 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-poppins",
+  display: "swap",
 });
 
 const ptSerif = PT_Serif({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-pt-serif",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Insurance Brokerage",
-  description: "Insurance brokerage services platform",
+  title: "Insurance Brokerage System",
+  description: "Modern insurance brokerage management system",
 };
 
 export default function RootLayout({
@@ -25,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${poppins.variable} ${ptSerif.variable} font-poppins`}>
+    <html lang="en" className={`${poppins.variable} ${ptSerif.variable}`}>
+      <body className="font-poppins">
         {children}
       </body>
     </html>

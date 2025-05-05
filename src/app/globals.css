@@ -1,17 +1,73 @@
-@import "tailwindcss/preflight";
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-poppins: var(--font-poppins);
-  --font-pt-serif: var(--font-pt-serif);
-}
-
 @layer base {
-  body {
-    @apply bg-white text-body;
+  :root {
+    --foreground-rgb: 0, 0, 0;
+    --background-rgb: 255, 255, 255;
   }
-  
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply min-h-screen text-body;
+    background: linear-gradient(to bottom right, #F9FAFB, #FFFFFF);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-pt-serif text-heading;
   }
+}
+
+@layer components {
+  .input-field {
+    @apply block w-full rounded-lg border border-gray-200 px-4 py-3 text-body placeholder-gray-400 
+    transition-all duration-200 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  .btn-primary {
+    @apply w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white 
+    shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 
+    transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-heading;
+  }
+
+  .link-primary {
+    @apply font-medium text-primary hover:text-primary/80 transition-colors duration-200;
+  }
+}
+
+/* Custom focus styles */
+*:focus {
+  @apply outline-none;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded hover:bg-gray-500;
+}
+
+/* Form input focus styles */
+input:focus, 
+button:focus {
+  @apply ring-2 ring-primary/20;
 }

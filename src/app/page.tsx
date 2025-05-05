@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,47 +15,49 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-white p-4">
-      <div className="w-full max-w-md space-y-8">
+    <main className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-lg transform transition-all duration-300 hover:shadow-xl">
         <div className="text-center">
-          <h1 className="font-pt-serif text-3xl font-bold text-heading">
+          <h1 className="font-pt-serif text-4xl font-bold text-heading mb-2">
             Welcome Back
           </h1>
-          <p className="mt-2 text-body">
+          <p className="text-body text-lg">
             Please sign in to your account
           </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-body">
-                Email
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="form-label">
+                Email address
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-body placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="input-field"
                 placeholder="Enter your email"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-body">
+            <div className="space-y-2">
+              <label htmlFor="password" className="form-label">
                 Password
               </label>
               <input
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-body placeholder-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="input-field"
                 placeholder="Enter your password"
               />
             </div>
@@ -68,7 +71,7 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary transition-all duration-200"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-body">
                 Remember me
@@ -76,18 +79,23 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary hover:text-primary/80">
-                Forgot password?
-              </a>
+              <Link
+                href="/forgot-password"
+                className="link-primary"
+              >
+                Forgot your password?
+              </Link>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            Sign in
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="btn-primary"
+            >
+              Sign in
+            </button>
+          </div>
         </form>
       </div>
     </main>
