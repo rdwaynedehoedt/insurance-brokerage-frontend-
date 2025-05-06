@@ -1,54 +1,145 @@
-# Insurance Brokerage System
+# Insurance Brokerage Frontend
 
-A modern insurance brokerage management system built with Next.js 15, TypeScript, and Tailwind CSS.
+A modern insurance brokerage management system built with Next.js, TypeScript, and Tailwind CSS.
 
-## Features
+## 🚀 Features
 
-- Modern and responsive UI
-- Type-safe development with TypeScript
-- Utility-first CSS with Tailwind
-- Fast development with Next.js App Router
+### Manager Dashboard
+- Client Management
+  - Add/Edit/Delete clients
+  - Search and filter clients
+  - Assign clients to sales reps
+  - View client details and policies
+- Sales Rep Management
+  - Monitor sales rep performance
+  - View assigned clients
+  - Track policy sales
 
-## Tech Stack
+### Underwriter Dashboard
+- Policy Management
+  - Create new insurance policies
+  - Edit existing policies
+  - Archive policies
+  - Search and filter policies
+- Policy Types
+  - Life Insurance
+  - Health Insurance
+  - Vehicle Insurance
 
-- Next.js 15.3.1
-- React 19
-- TypeScript
-- Tailwind CSS
-- PostCSS
+### Sales Rep Dashboard
+- Client Management
+  - View assigned clients
+  - Add new clients
+  - Track client policies
+- Policy Management
+  - View available policies
+  - Create policy applications
+  - Track policy status
 
-## Getting Started
+## 🔗 URLs
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+### Manager Dashboard
+- Main Dashboard: `/manager-dashboard`
+- Client Management: `/manager-dashboard/clients`
+- Sales Rep Management: `/manager-dashboard/sales-reps`
 
-## Project Structure
+### Underwriter Dashboard
+- Main Dashboard: `/underwriter-dashboard`
+- Policy Management: `/underwriter-dashboard/policies`
+
+### Sales Rep Dashboard
+- Main Dashboard: `/sales-rep-dashboard`
+- Client Management: `/sales-rep-dashboard/clients`
+- Policy Applications: `/sales-rep-dashboard/policies`
+
+## 🛠️ Technical Stack
+
+- **Framework**: Next.js 14
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide Icons
+- **State Management**: React Hooks
+- **Form Handling**: React Forms
+- **Authentication**: NextAuth.js (to be implemented)
+- **API Integration**: REST API (to be implemented)
+
+## 📦 Project Structure
 
 ```
 src/
-├── app/              # Next.js App Router
-│   ├── layout.tsx    # Root layout
-│   ├── page.tsx      # Home page
-│   └── globals.css   # Global styles
-├── components/       # React components
-└── styles/          # Additional styles
+├── app/
+│   ├── (manager)/
+│   │   └── manager-dashboard/
+│   ├── (underwriter)/
+│   │   └── underwriter-dashboard/
+│   └── (sales-rep)/
+│       └── sales-rep-dashboard/
+├── components/
+│   ├── ui/
+│   └── shared/
+└── lib/
+    └── utils/
 ```
 
-## Development
+## 🚀 Getting Started
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/insurance-brokerage-frontend.git
+```
 
-## License
+2. Install dependencies:
+```bash
+npm install
+```
 
-MIT
+3. Run the development server:
+```bash
+npm run dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🔧 Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_API_URL=your_api_url
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3000
+```
+
+## 📝 Development Guidelines
+
+1. **Code Style**
+   - Use TypeScript for type safety
+   - Follow ESLint rules
+   - Use Prettier for formatting
+
+2. **Component Structure**
+   - Use functional components
+   - Implement proper TypeScript interfaces
+   - Follow atomic design principles
+
+3. **State Management**
+   - Use React hooks for local state
+   - Implement proper error handling
+   - Add loading states
+
+4. **Styling**
+   - Use Tailwind CSS classes
+   - Follow mobile-first approach
+   - Maintain consistent spacing
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

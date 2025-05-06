@@ -16,7 +16,7 @@
     @apply min-h-screen text-body;
     background: linear-gradient(to bottom right, #F9FAFB, #FFFFFF);
   }
-
+  
   h1, h2, h3, h4, h5, h6 {
     @apply font-pt-serif text-heading;
   }
