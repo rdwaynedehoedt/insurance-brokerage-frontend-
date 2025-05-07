@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '@/lib/contexts/AuthContext';
 import { FileText, Home, Plus, LogOut, Search } from 'lucide-react';
 import PolicyModal from './components/PolicyModal';
 
@@ -54,6 +55,7 @@ const mockPolicies: Policy[] = [
 ];
 
 export default function UnderwriterDashboard() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('policies');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -63,6 +65,11 @@ export default function UnderwriterDashboard() {
   const menuItems = [
     { id: 'policies', label: 'Policies', icon: FileText },
   ];
+
+  const handleLogout = () => {
+    logout();
+    // The AuthContext's logout function will redirect to login page
+  };
 
   const handleAddPolicy = () => {
     setSelectedPolicy(null);
@@ -114,7 +121,10 @@ export default function UnderwriterDashboard() {
         </nav>
 
         <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
-          <button className="flex items-center text-gray-600 hover:text-gray-900">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
             <LogOut className="w-5 h-5 mr-3" />
             Logout
           </button>

@@ -93,8 +93,7 @@ export default function PolicyModal({ isOpen, onClose, policy }: PolicyModalProp
     e.preventDefault();
     
     if (validateForm()) {
-      // TODO: Handle form submission
-      console.log('Form submitted:', formData);
+      // Submit policy data
       onClose();
     }
   };

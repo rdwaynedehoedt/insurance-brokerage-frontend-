@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, FileText, Home, Download, LogOut } from 'lucide-react';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { Users, FileText, Home, Download, LogOut, Plus, Search } from 'lucide-react';
 import StatsCards from './components/StatsCards';
 import ClientsList from './components/ClientsList';
 
 export default function SalesDashboard() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const menuItems = [
@@ -14,6 +16,11 @@ export default function SalesDashboard() {
     { id: 'policies', label: 'Policies', icon: FileText },
     { id: 'downloads', label: 'Downloads', icon: Download },
   ];
+
+  const handleLogout = () => {
+    logout();
+    // The AuthContext's logout function will redirect to login page
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -44,7 +51,10 @@ export default function SalesDashboard() {
         </nav>
 
         <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
-          <button className="flex items-center text-gray-600 hover:text-gray-900">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
             <LogOut className="w-5 h-5 mr-3" />
             Logout
           </button>
