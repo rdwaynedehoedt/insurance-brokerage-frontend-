@@ -219,7 +219,7 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
         }
         
         // Close the modal
-        onClose();
+      onClose();
       } catch (error: any) {
         console.error('Error saving client:', error);
         const errorMessage = error.response?.data?.message || 
