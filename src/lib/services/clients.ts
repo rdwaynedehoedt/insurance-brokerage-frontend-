@@ -22,7 +22,7 @@ export interface Client {
   contact_person?: string;
   email?: string;
   social_media?: string;
-  nic_proof?: string;
+  nic_proof?: string | File;
   dob_proof?: string;
   business_registration?: string;
   svat_proof?: string;
@@ -103,59 +103,40 @@ export const clientService = {
     }
   },
 
-  async createClient(clientData: Client): Promise<string> {
-    try {
-      console.log('Creating client with data:', JSON.stringify(clientData, null, 2));
-      
-      // Create a clean copy of the data
-      const cleanedData = { ...clientData };
-      
-      // Make sure sales_rep_id is a number if present
-      if (cleanedData.salesRep && !cleanedData.sales_rep_id) {
-        cleanedData.sales_rep_id = parseInt(cleanedData.salesRep);
-      }
-      
-      // Remove salesRep field as it's not in the database
-      delete cleanedData.salesRep;
-      
-      // Ensure we're not sending an empty ID
-      if (!cleanedData.id || cleanedData.id === '') {
-        delete cleanedData.id;
-      }
-      
-      const response = await apiClient.post<ApiResponse<{id: string}>>('/clients', cleanedData);
-      console.log('Create client response:', JSON.stringify(response.data, null, 2));
-      return response.data.data.id;
-    } catch (error) {
-      console.error('Error creating client:', error);
-      throw error;
-    }
-  },
+  async createClient(clientData: FormData): Promise<string> {
+  try {
+    const response = await apiClient.post('/clients', clientData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
-  async updateClient(id: string, clientData: Partial<Client>): Promise<void> {
-    try {
-      console.log(`Updating client ${id} with data:`, JSON.stringify(clientData, null, 2));
-      
-      // Create a clean copy of the data
-      const cleanedData = { ...clientData };
-      
-      // Make sure sales_rep_id is a number if present
-      if (cleanedData.salesRep && !cleanedData.sales_rep_id) {
-        cleanedData.sales_rep_id = parseInt(cleanedData.salesRep);
-      }
-      
-      // Remove salesRep field as it's not in the database
-      delete cleanedData.salesRep;
-      
-      // Remove the id field from the update data (we're using it in the URL)
-      delete cleanedData.id;
-      
-      await apiClient.put(`/clients/${id}`, cleanedData);
-    } catch (error) {
-      console.error(`Error updating client ${id}:`, error);
-      throw error;
+    console.log('Response from backend:', response.data);
+
+    const responseData = response.data as ApiResponse<{ id: string }>;
+    if (!responseData || !responseData.data || !responseData.data.id) {
+      throw new Error('Invalid response format: Missing id');
     }
-  },
+
+    return responseData.data.id;
+  } catch (error) {
+    console.error('Error creating client:', error);
+    throw error;
+  }
+},
+
+async updateClient(id: string, clientData: FormData): Promise<void> {
+  try {
+    await apiClient.put(`/clients/${id}`, clientData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  } catch (error) {
+    console.error(`Error updating client ${id}:`, error);
+    throw error;
+  }
+},
 
   async deleteClient(id: string): Promise<void> {
     try {
