@@ -178,64 +178,69 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      try {
-        // Create a copy of formData with correct mapping
-        const clientData = {
-          ...formData,
-          // Assign a default sales_rep_id of 1 for all clients
-          sales_rep_id: 1
-        };
-        
-        // Make sure to remove the id field for new clients
-        if (!client && clientData.id === '') {
-          delete clientData.id;
+  e.preventDefault();
+
+  if (validateForm()) {
+    try {
+      if (!formData) {
+        throw new Error('Form data is undefined');
+      }
+
+      const formDataToSend = new FormData();
+
+      // Append all form data fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formDataToSend.append(key, value as any);
         }
-        
-        console.log('Submitting client data:', JSON.stringify(clientData, null, 2));
-        
-        if (client) {
-          // Update existing client
-          await clientService.updateClient(client.id as string, clientData);
-          toast.success('Client updated successfully', {
-            duration: 4000,
-            position: 'top-center',
-          });
-        } else {
-          // Create new client
-          const newClientId = await clientService.createClient(clientData as ClientType);
-          console.log('New client created with ID:', newClientId);
-          toast.success(`Client added successfully`, {
-            duration: 4000,
-            position: 'top-center',
-          });
-        }
-        
-        // Call the callback function if provided
-        if (onClientSaved) {
-          onClientSaved();
-        }
-        
-        // Close the modal
-      onClose();
-      } catch (error: any) {
-        console.error('Error saving client:', error);
-        const errorMessage = error.response?.data?.message || 
-                            (error.message ? `${error.message}` : 'Failed to save client');
-        toast.error(errorMessage, {
+      });
+
+      // Assign a default sales_rep_id of 1 for all clients
+      formDataToSend.append('sales_rep_id', '1');
+
+      console.log('Submitting client data:', Array.from(formDataToSend.entries()));
+
+      if (client) {
+        // Update existing client
+        await clientService.updateClient(client.id as string, formDataToSend);
+        toast.success('Client updated successfully', {
+          duration: 4000,
+          position: 'top-center',
+        });
+      } else {
+        // Create new client
+        const newClientId = await clientService.createClient(formDataToSend);
+        console.log('New client created with ID:', newClientId);
+        toast.success(`Client added successfully`, {
           duration: 4000,
           position: 'top-center',
         });
       }
-    } else {
-      toast.error('Please fix the form errors before submitting', {
+
+      // Call the callback function if provided
+      if (onClientSaved) {
+        onClientSaved();
+      }
+
+      // Close the modal
+      onClose();
+    } catch (error: any) {
+      console.error('Error saving client:', error);
+      const errorMessage =
+        error.response?.data?.message ||
+        (error.message ? `${error.message}` : 'Failed to save client');
+      toast.error(errorMessage, {
         duration: 4000,
         position: 'top-center',
       });
     }
-  };
+  } else {
+    toast.error('Please fix the form errors before submitting', {
+      duration: 4000,
+      position: 'top-center',
+    });
+  }
+};
 
   if (!isOpen) return null;
 
@@ -535,16 +540,21 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
           <h3 className="font-medium text-lg text-gray-700 border-b pb-2 mt-8">Documents</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                NIC Proof
-              </label>
-              <input
-                type="text"
-                value={formData.nic_proof}
-                onChange={(e) => setFormData({ ...formData, nic_proof: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    NIC Proof (Upload Image)
+  </label>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        setFormData({ ...formData, nic_proof: file }); // Save the file in formData
+      }
+    }}
+    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+  />
+</div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
