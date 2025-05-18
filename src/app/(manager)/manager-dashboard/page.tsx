@@ -470,30 +470,30 @@ export default function ManagerDashboard() {
               {/* Search and Filters */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="relative w-full md:w-64">
-                  <input
-                    type="text"
-                    placeholder="Search clients..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                      <input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
+                      />
                   <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                </div>
+                    </div>
                 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleAddClient}
+                    <button
+                      onClick={handleAddClient}
                     className="flex items-center gap-1 px-4 py-2 bg-orange-700 text-white rounded-lg hover:bg-orange-800"
-                  >
+                    >
                     <Plus className="w-4 h-4" />
-                    Add Client
-                  </button>
+                      Add Client
+                    </button>
                 </div>
               </div>
-              
+
               {/* Clients Table */}
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="overflow-x-auto">
                   {isLoading ? (
                     <div className="p-8 text-center">
                       <p>Loading clients...</p>
@@ -503,32 +503,32 @@ export default function ManagerDashboard() {
                       <p>No clients found.</p>
                     </div>
                   ) : (
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy #</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredClients.map((client) => (
-                          <tr key={client.id}>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredClients.map((client) => (
+                      <tr key={client.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">{client.client_name}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{client.mobile_no}</div>
                               <div className="text-sm text-gray-500">{client.email}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{client.product}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900">{client.policy_no}</div>
-                            </td>
+                        </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex items-center justify-end space-x-3">
                                 <button
@@ -538,25 +538,25 @@ export default function ManagerDashboard() {
                                   <Eye className="w-4 h-4 mr-1" />
                                   Details
                                 </button>
-                                <button
-                                  onClick={() => handleEditClient(client)}
+                          <button
+                            onClick={() => handleEditClient(client)}
                                   className="text-orange-600 hover:text-orange-900"
-                                >
-                                  Edit
-                                </button>
+                          >
+                            Edit
+                          </button>
                                 <button
                                   onClick={() => handleDeleteClient(client)}
                                   className="text-red-600 hover:text-red-900 flex items-center"
                                 >
                                   <Trash className="w-4 h-4 mr-1" />
-                                  Delete
-                                </button>
+                            Delete
+                          </button>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                   )}
                 </div>
               </div>
@@ -566,13 +566,13 @@ export default function ManagerDashboard() {
           {/* Reports Tab */}
           {activeTab === 'reports' && (
             <div className="space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Generate Reports</h3>
                 <p className="text-sm text-gray-600 mb-6">
                   Generate customized reports based on client data. You can filter by date range and choose the type of report that best suits your needs.
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="border rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex items-center mb-3">
                       <div className="p-2 bg-blue-100 rounded-md mr-3">
@@ -615,7 +615,7 @@ export default function ManagerDashboard() {
                         <FileText className="h-5 w-5 text-red-600" />
                       </div>
                       <h4 className="font-medium">Policy Expiry</h4>
-                    </div>
+                </div>
                     <p className="text-sm text-gray-500 mb-4">
                       List of policies with their expiration dates sorted by days remaining.
                     </p>
@@ -625,17 +625,17 @@ export default function ManagerDashboard() {
                     >
                       Generate Report →
                     </button>
-                  </div>
+                </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Client Modal */}
-          <ClientModal
-            isOpen={isClientModalOpen}
-            onClose={() => setIsClientModalOpen(false)}
-            client={selectedClient}
+      {/* Client Modal */}
+      <ClientModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        client={selectedClient}
             onClientSaved={handleClientSaved}
           />
 
