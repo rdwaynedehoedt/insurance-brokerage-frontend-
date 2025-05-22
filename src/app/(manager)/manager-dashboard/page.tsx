@@ -2,11 +2,329 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { Users, Home, LogOut, Search, Plus, Eye, X, Trash, FileText } from 'lucide-react';
+import { Users, Home, LogOut, Search, Plus, Eye, X, Trash, FileText, UserPlus, RefreshCcw, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import ClientModal from './components/ClientModal';
 import ReportGenerator from './components/ReportGenerator';
 import { clientService, Client } from '@/lib/services/clients';
 import { Toaster, toast } from 'react-hot-toast';
+import ClientDocuments from './components/ClientDocuments';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+
+// Simple component to check if a file exists
+function FileChecker() {
+  const [fileUrl, setFileUrl] = useState('');
+  const [result, setResult] = useState<{exists: boolean, status?: number, message?: string} | null>(null);
+  const [checking, setChecking] = useState(false);
+  
+  const checkFile = async () => {
+    if (!fileUrl) return;
+    
+    setChecking(true);
+    setResult(null);
+    
+    try {
+      // Clean the URL to get just the path
+      let path = fileUrl;
+      if (path.includes('http://localhost:5000')) {
+        path = path.replace('http://localhost:5000', '');
+      }
+      
+      // Add leading slash if missing
+      if (!path.startsWith('/')) {
+        path = '/' + path;
+      }
+      
+      console.log('Checking file at path:', path);
+      
+      // Try to fetch the file
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await axios.get(`${baseUrl}${path}`, {
+        validateStatus: () => true // Accept all status codes
+      });
+      
+      console.log('File check response:', response);
+      
+      setResult({
+        exists: response.status === 200,
+        status: response.status,
+        message: `Status: ${response.status} ${response.statusText}`
+      });
+    } catch (error) {
+      console.error('Error checking file:', error);
+      setResult({
+        exists: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } finally {
+      setChecking(false);
+    }
+  };
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      <h3 className="text-lg font-semibold mb-2">Document Path Checker</h3>
+      <div className="flex space-x-2">
+        <input
+          type="text"
+          value={fileUrl}
+          onChange={(e) => setFileUrl(e.target.value)}
+          placeholder="Enter document path or URL"
+          className="flex-1 p-2 border rounded"
+        />
+        <button
+          onClick={checkFile}
+          disabled={checking || !fileUrl}
+          className={`px-3 py-2 rounded text-white ${checking ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'}`}
+        >
+          {checking ? 'Checking...' : 'Check'}
+        </button>
+      </div>
+      {result && (
+        <div className={`mt-2 p-2 rounded ${result.exists ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <p>File {result.exists ? 'exists' : 'does not exist'}</p>
+          {result.message && <p className="text-sm">{result.message}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component to run document diagnostic
+function DocumentDiagnostic() {
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState<any>(null);
+  const [fixingPaths, setFixingPaths] = useState(false);
+  const [fixResults, setFixResults] = useState<any>(null);
+  
+  const runDiagnostic = async () => {
+    setRunning(true);
+    setResults(null);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await axios.post(
+        `${baseUrl}/api/clients/diagnostic/check-documents`, 
+        {}, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      console.log('Document diagnostic results:', response.data);
+      // Type assertion on the response data
+      const responseData = response.data as {
+        success: boolean;
+        message: string;
+        results: {
+          totalClients: number;
+          checkedDocuments: number;
+          missingFiles: number;
+          tempFiles: number;
+          fixedPaths: number;
+          errors: string[];
+          details: any[];
+        };
+      };
+      
+      setResults(responseData.results);
+      
+      if (responseData.results.fixedPaths > 0) {
+        toast.success(`Fixed ${responseData.results.fixedPaths} document paths!`);
+      }
+    } catch (error) {
+      console.error('Error running document diagnostic:', error);
+      toast.error('Failed to run document diagnostic');
+      
+      // Type assertion if we need to access error properties
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setResults({ error: errorMessage });
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const fixDocumentPaths = async () => {
+    setFixingPaths(true);
+    setFixResults(null);
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await axios.post(
+        `${baseUrl}/api/clients/diagnostic/fix-document-paths`, 
+        {}, 
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      console.log('Fix document paths results:', response.data);
+      const responseData = response.data as {
+        success: boolean;
+        message: string;
+        results: {
+          totalClients: number;
+          checkedPaths: number;
+          fixedPaths: number;
+          errors: string[];
+          details: any[];
+        };
+      };
+      
+      setFixResults(responseData.results);
+      
+      if (responseData.results.fixedPaths > 0) {
+        toast.success(`Fixed ${responseData.results.fixedPaths} document paths!`);
+      } else {
+        toast.success('All document paths are correctly formatted.');
+      }
+    } catch (error) {
+      console.error('Error fixing document paths:', error);
+      toast.error('Failed to fix document paths');
+      
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setFixResults({ error: errorMessage });
+    } finally {
+      setFixingPaths(false);
+    }
+  };
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      <h3 className="text-lg font-semibold mb-2">Document Diagnostic</h3>
+      <div className="mb-4">
+        <p className="text-sm text-gray-600 mb-2">
+          Run a diagnostic to check for and fix document path issues.
+          This will verify document paths and attempt to fix temporary folder references.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <button
+            onClick={runDiagnostic}
+            disabled={running}
+            className={`px-4 py-2 rounded text-white ${running ? 'bg-gray-500' : 'bg-orange-500 hover:bg-orange-600'}`}
+          >
+            {running ? 'Running diagnostic...' : 'Run Diagnostic'}
+          </button>
+          <button
+            onClick={fixDocumentPaths}
+            disabled={fixingPaths}
+            className={`px-4 py-2 rounded text-white ${fixingPaths ? 'bg-gray-500' : 'bg-blue-500 hover:bg-blue-600'}`}
+          >
+            {fixingPaths ? 'Fixing paths...' : 'Fix Document Paths'}
+          </button>
+        </div>
+      </div>
+      
+      {results && (
+        <div className="border rounded p-3 bg-gray-50 text-sm mb-3">
+          <h4 className="font-medium mb-1">Diagnostic Results:</h4>
+          {results.error ? (
+            <div className="text-red-600">{results.error}</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div>Clients checked:</div>
+                <div className="font-medium">{results.totalClients}</div>
+                
+                <div>Documents checked:</div>
+                <div className="font-medium">{results.checkedDocuments}</div>
+                
+                <div>Missing files:</div>
+                <div className="font-medium text-amber-600">{results.missingFiles}</div>
+                
+                <div>Temp files found:</div>
+                <div className="font-medium text-blue-600">{results.tempFiles}</div>
+                
+                <div>Paths fixed:</div>
+                <div className="font-medium text-green-600">{results.fixedPaths}</div>
+                
+                <div>Errors:</div>
+                <div className="font-medium text-red-600">{results.errors?.length || 0}</div>
+              </div>
+              
+              {results.errors && results.errors.length > 0 && (
+                <div className="mt-2 bg-red-50 p-2 rounded max-h-32 overflow-y-auto">
+                  <p className="font-medium text-red-800 mb-1">Errors:</p>
+                  {results.errors.map((error: string, i: number) => (
+                    <div key={i} className="text-xs text-red-700">{error}</div>
+                  ))}
+                </div>
+              )}
+              
+              {results.details && results.details.length > 0 && (
+                <div className="mt-2">
+                  <p className="font-medium">
+                    <a 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('Full diagnostic details:', results.details);
+                        toast.success('Full details logged to console');
+                      }}
+                      className="text-blue-600 hover:underline"
+                    >
+                      View full details in console
+                    </a>
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      
+      {fixResults && (
+        <div className="border rounded p-3 bg-gray-50 text-sm">
+          <h4 className="font-medium mb-1">Path Fix Results:</h4>
+          {fixResults.error ? (
+            <div className="text-red-600">{fixResults.error}</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div>Clients checked:</div>
+                <div className="font-medium">{fixResults.totalClients}</div>
+                
+                <div>Paths checked:</div>
+                <div className="font-medium">{fixResults.checkedPaths}</div>
+                
+                <div>Paths fixed:</div>
+                <div className="font-medium text-green-600">{fixResults.fixedPaths}</div>
+                
+                <div>Errors:</div>
+                <div className="font-medium text-red-600">{fixResults.errors?.length || 0}</div>
+              </div>
+              
+              {fixResults.errors && fixResults.errors.length > 0 && (
+                <div className="mt-2 bg-red-50 p-2 rounded max-h-32 overflow-y-auto">
+                  <p className="font-medium text-red-800 mb-1">Errors:</p>
+                  {fixResults.errors.map((error: string, i: number) => (
+                    <div key={i} className="text-xs text-red-700">{error}</div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Client Delete Confirmation Modal
 function DeleteConfirmationModal({ 
@@ -65,16 +383,16 @@ function DeleteConfirmationModal({
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
               disabled={!isConfirmEnabled}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+              className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors duration-200 ${
                 isConfirmEnabled
-                  ? 'bg-red-600 hover:bg-red-700'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-sm'
                   : 'bg-red-300 cursor-not-allowed'
               }`}
             >
@@ -258,6 +576,11 @@ function ClientDetailsModal({ isOpen, onClose, client }: { isOpen: boolean; onCl
               </div>
             </div>
           </div>
+          
+          <div className="col-span-1 md:col-span-2 space-y-4">
+            <h3 className="text-md font-semibold text-gray-700 border-b pb-2">Client Documents</h3>
+            <ClientDocuments client={client} />
+          </div>
         </div>
       </div>
     </div>
@@ -266,21 +589,37 @@ function ClientDetailsModal({ isOpen, onClose, client }: { isOpen: boolean; onCl
 
 export default function ManagerDashboard() {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('clients');
+  
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState('280px');
+  
   const [searchTerm, setSearchTerm] = useState('');
-  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showClientTable, setShowClientTable] = useState(true);
+  
+  // Client modal state
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientDetailsModalOpen, setClientDetailsModalOpen] = useState(false);
   const [clientToView, setClientToView] = useState<Client | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
+  // Client delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  
+  // Report Generator Modal state
+  const [showReportModal, setShowReportModal] = useState(false);
+  
+  // Debug mode for file checking
+  const [debugMode, setDebugMode] = useState(false);
 
   const menuItems = [
-    { id: 'overview', label: 'Overview', icon: Home },
-    { id: 'clients', label: 'All Clients', icon: Users },
+    // { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'clients', label: 'Underwriter', icon: Users },
     { id: 'reports', label: 'Reports', icon: FileText },
   ];
 
@@ -310,12 +649,12 @@ export default function ManagerDashboard() {
 
   const handleAddClient = () => {
     setSelectedClient(null);
-    setIsClientModalOpen(true);
+    setShowClientModal(true);
   };
 
   const handleEditClient = (client: Client) => {
     setSelectedClient(client);
-    setIsClientModalOpen(true);
+    setShowClientModal(true);
   };
 
   const handleClientSaved = () => {
@@ -324,344 +663,352 @@ export default function ManagerDashboard() {
 
   const handleViewClientDetails = (client: Client) => {
     setClientToView(client);
-    setIsDetailsModalOpen(true);
+    setClientDetailsModalOpen(true);
   };
 
   const handleDeleteClient = (client: Client) => {
     setClientToDelete(client);
-    setIsDeleteModalOpen(true);
+    setDeleteConfirmOpen(true);
   };
 
   const confirmDeleteClient = async () => {
-    if (!clientToDelete || !clientToDelete.id) return;
+    if (!clientToDelete) return;
     
     try {
-      setIsLoading(true);
-      await clientService.deleteClient(clientToDelete.id);
+      await clientService.deleteClient(clientToDelete.id!);
       toast.success(`${clientToDelete.client_name} deleted successfully`);
-      setIsDeleteModalOpen(false);
+      setDeleteConfirmOpen(false);
       fetchClients();
     } catch (error) {
       console.error('Error deleting client:', error);
       toast.error('Failed to delete client');
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const filteredClients = clients.filter(client => 
-    client.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (client.mobile_no && client.mobile_no.includes(searchTerm))
-  );
+  // Filter clients based on search term
+  useEffect(() => {
+    if (clients.length === 0) return;
+    
+    const filtered = clients.filter(client => 
+      client.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.mobile_no && client.mobile_no.includes(searchTerm))
+    );
+    setFilteredClients(filtered);
+  }, [searchTerm, clients]);
 
   const handleOpenReportModal = () => {
     if (clients.length === 0) {
       fetchClients().then(() => {
-        setIsReportModalOpen(true);
+        setShowReportModal(true);
       });
     } else {
-      setIsReportModalOpen(true);
+      setShowReportModal(true);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Toaster 
-        position="top-right" 
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
-          success: {
-            style: {
-              background: 'green',
-            },
-          },
-          error: {
-            style: {
-              background: 'red',
-            },
-          },
-        }}
-      />
-      {/* Left Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-orange-700">Manager Portal</h1>
+    <div className="flex flex-col h-screen">
+      <Toaster position="top-center" />
+      
+      {/* Debug panel toggle */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <button 
+          onClick={() => setDebugMode(!debugMode)}
+          className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
+          title="Toggle debug tools"
+        >
+          <span className="text-xl">🔧</span>
+        </button>
+      </div>
+      
+      {/* Debug panel */}
+      {debugMode && (
+        <div className="fixed top-4 right-4 z-50 w-96">
+          <FileChecker />
+          <DocumentDiagnostic />
         </div>
-        
-        <nav className="mt-6">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center px-6 py-3 text-sm font-medium ${
-                  activeTab === item.id
-                    ? 'bg-orange-50 text-orange-700 border-r-4 border-orange-700'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+      )}
+      
+      {/* Main container */}
+      <div className="flex flex-1 h-full overflow-hidden">
+        {/* Left Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-orange-700">Manager Portal</h1>
+          </div>
+          
+          <nav className="mt-6">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-all duration-300 ${
+                    activeTab === item.id
+                      ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-r-4 border-orange-700 shadow-sm'
+                      : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 mr-3" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
 
-        <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
-          <button 
-            onClick={handleLogout}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Logout
-          </button>
-        </div>
-      </aside>
+          <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center text-gray-600 hover:text-orange-700 transition-colors duration-300"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Logout
+            </button>
+          </div>
+        </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <header className="bg-white border-b border-gray-200 px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">
-                {menuItems.find(item => item.id === activeTab)?.label}
-              </h2>
-              <p className="text-gray-600 mt-1">Welcome back, Manager!</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="inline-block px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">
-                Manager
-              </span>
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-orange-700" />
+        {/* Main Content */}
+        <main className="flex-1 ml-64">
+          <header className="bg-white border-b border-gray-200 px-8 py-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {menuItems.find(item => item.id === activeTab)?.label}
+                </h2>
+                <p className="text-gray-600 mt-1">Welcome back, Manager!</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="inline-block px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">
+                  Manager
+                </span>
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-orange-700" />
+                </div>
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <div className="p-8">
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Stats Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-center">
-                    <div className="p-3 bg-orange-50 rounded-lg mr-4">
-                      <Users className="w-6 h-6 text-orange-700" />
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-600">Total Clients</span>
-                      <div className="text-2xl font-bold text-gray-900">{clients.length}</div>
+          <div className="p-8">
+            {/* Commenting out Overview section 
+            {activeTab === 'overview' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="flex items-center">
+                      <div className="p-3 bg-orange-50 rounded-lg mr-4">
+                        <Users className="w-6 h-6 text-orange-700" />
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-600">Total Clients</span>
+                        <div className="text-2xl font-bold text-gray-900">{clients.length}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+            */}
 
-          {/* All Clients Tab */}
-          {activeTab === 'clients' && (
-            <div className="space-y-6">
-              {/* Search and Filters */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="relative w-full md:w-64">
-                      <input
-                        type="text"
-                        placeholder="Search clients..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                    </div>
-                
-                <div className="flex items-center gap-3">
+            {/* All Clients Tab */}
+            {activeTab === 'clients' && (
+              <div className="space-y-6">
+                {/* Search and Filters */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="relative w-full md:w-64">
+                    <input
+                      type="text"
+                      placeholder="Search clients..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={handleAddClient}
-                    className="flex items-center gap-1 px-4 py-2 bg-orange-700 text-white rounded-lg hover:bg-orange-800"
+                      className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-300 shadow-sm hover:shadow"
                     >
-                    <Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4" />
                       Add Client
                     </button>
-                </div>
-              </div>
-
-              {/* Clients Table */}
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                  {isLoading ? (
-                    <div className="p-8 text-center">
-                      <p>Loading clients...</p>
-                    </div>
-                  ) : filteredClients.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <p>No clients found.</p>
-                    </div>
-                  ) : (
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy #</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredClients.map((client) => (
-                      <tr key={client.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{client.client_name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{client.mobile_no}</div>
-                              <div className="text-sm text-gray-500">{client.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{client.product}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{client.policy_no}</div>
-                        </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-3">
-                                <button
-                                  onClick={() => handleViewClientDetails(client)}
-                                  className="text-blue-600 hover:text-blue-900 flex items-center"
-                                >
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  Details
-                                </button>
-                          <button
-                            onClick={() => handleEditClient(client)}
-                                  className="text-orange-600 hover:text-orange-900"
-                          >
-                            Edit
-                          </button>
-                                <button
-                                  onClick={() => handleDeleteClient(client)}
-                                  className="text-red-600 hover:text-red-900 flex items-center"
-                                >
-                                  <Trash className="w-4 h-4 mr-1" />
-                            Delete
-                          </button>
-                              </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Reports Tab */}
-          {activeTab === 'reports' && (
-            <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Generate Reports</h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  Generate customized reports based on client data. You can filter by date range and choose the type of report that best suits your needs.
-                </p>
-                
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="border rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-center mb-3">
-                      <div className="p-2 bg-blue-100 rounded-md mr-3">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <h4 className="font-medium">Client List</h4>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Comprehensive list of all clients with their basic information and contact details.
-                    </p>
-                    <button 
-                      onClick={handleOpenReportModal}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      Generate Report →
-                    </button>
                   </div>
-                  
-                  <div className="border rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-center mb-3">
-                      <div className="p-2 bg-green-100 rounded-md mr-3">
-                        <FileText className="h-5 w-5 text-green-600" />
+                </div>
+
+                {/* Clients Table - Only show when View button is clicked */}
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    {isLoading ? (
+                      <div className="p-8 text-center">
+                        <p>Loading clients...</p>
                       </div>
-                      <h4 className="font-medium">Financial Summary</h4>
-                    </div>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Summary of financial data including premiums, commissions and total invoices.
-                    </p>
-                    <button 
-                      onClick={handleOpenReportModal}
-                      className="text-sm text-green-600 hover:text-green-800"
-                    >
-                      Generate Report →
-                    </button>
+                    ) : filteredClients.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <p>No clients found.</p>
+                      </div>
+                    ) : (
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy #</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredClients.map((client) => (
+                            <tr key={client.id}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">{client.client_name}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">{client.mobile_no}</div>
+                                <div className="text-sm text-gray-500">{client.email}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">{client.product}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">{client.policy_no}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center justify-end space-x-3">
+                                  <button
+                                    onClick={() => handleViewClientDetails(client)}
+                                    className="text-blue-600 hover:text-blue-800 flex items-center transition-colors duration-200 hover:scale-105 transform"
+                                  >
+                                    <Eye className="w-4 h-4 mr-1" />
+                                    Details
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditClient(client)}
+                                    className="text-orange-600 hover:text-orange-800 transition-colors duration-200 hover:scale-105 transform"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteClient(client)}
+                                    className="text-red-600 hover:text-red-800 flex items-center transition-colors duration-200 hover:scale-105 transform"
+                                  >
+                                    <Trash className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
-                  
-                  <div className="border rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex items-center mb-3">
-                      <div className="p-2 bg-red-100 rounded-md mr-3">
-                        <FileText className="h-5 w-5 text-red-600" />
-                      </div>
-                      <h4 className="font-medium">Policy Expiry</h4>
-                </div>
-                    <p className="text-sm text-gray-500 mb-4">
-                      List of policies with their expiration dates sorted by days remaining.
-                    </p>
-                    <button 
-                      onClick={handleOpenReportModal}
-                      className="text-sm text-red-600 hover:text-red-800"
-                    >
-                      Generate Report →
-                    </button>
-                </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-      {/* Client Modal */}
-      <ClientModal
-        isOpen={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        client={selectedClient}
-            onClientSaved={handleClientSaved}
-          />
+            {/* Reports Tab */}
+            {activeTab === 'reports' && (
+              <div className="space-y-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Generate Reports</h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Generate customized reports based on client data. You can filter by date range and choose the type of report that best suits your needs.
+                  </p>
+                  
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="border rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-center mb-3">
+                        <div className="p-2 bg-blue-100 rounded-md mr-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <h4 className="font-medium">Client List</h4>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Comprehensive list of all clients with their basic information and contact details.
+                      </p>
+                      <button 
+                        onClick={handleOpenReportModal}
+                        className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-300 hover:underline flex items-center group"
+                      >
+                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      </button>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-center mb-3">
+                        <div className="p-2 bg-green-100 rounded-md mr-3">
+                          <FileText className="h-5 w-5 text-green-600" />
+                        </div>
+                        <h4 className="font-medium">Financial Summary</h4>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Summary of financial data including premiums, commissions and total invoices.
+                      </p>
+                      <button 
+                        onClick={handleOpenReportModal}
+                        className="text-sm text-green-600 hover:text-green-800 transition-colors duration-300 hover:underline flex items-center group"
+                      >
+                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      </button>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-center mb-3">
+                        <div className="p-2 bg-red-100 rounded-md mr-3">
+                          <FileText className="h-5 w-5 text-red-600" />
+                        </div>
+                        <h4 className="font-medium">Policy Expiry</h4>
+                  </div>
+                      <p className="text-sm text-gray-500 mb-4">
+                        List of policies with their expiration dates sorted by days remaining.
+                      </p>
+                      <button 
+                        onClick={handleOpenReportModal}
+                        className="text-sm text-red-600 hover:text-red-800 transition-colors duration-300 hover:underline flex items-center group"
+                      >
+                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      </button>
+                  </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Client Details Modal */}
-          <ClientDetailsModal 
-            isOpen={isDetailsModalOpen}
-            onClose={() => setIsDetailsModalOpen(false)}
-            client={clientToView}
-          />
+        {/* Client Modal */}
+        <ClientModal
+          isOpen={showClientModal}
+          onClose={() => setShowClientModal(false)}
+          client={selectedClient}
+          onClientSaved={handleClientSaved}
+        />
 
-          {/* Delete Confirmation Modal */}
-          <DeleteConfirmationModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            client={clientToDelete}
-            onConfirm={confirmDeleteClient}
-          />
+        {/* Client Details Modal */}
+        <ClientDetailsModal 
+          isOpen={clientDetailsModalOpen}
+          onClose={() => setClientDetailsModalOpen(false)}
+          client={clientToView}
+        />
 
-          {/* Report Generator Modal */}
-          <ReportGenerator
-            isOpen={isReportModalOpen}
-            onClose={() => setIsReportModalOpen(false)}
-            clients={clients}
-          />
-        </div>
-      </main>
-    </div>
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal
+          isOpen={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          client={clientToDelete}
+          onConfirm={confirmDeleteClient}
+        />
+
+        {/* Report Generator Modal */}
+        <ReportGenerator
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          clients={clients}
+        />
+      </div>
+    </main>
+  </div>
+</div>
   );
 } 

@@ -22,11 +22,19 @@ export interface Client {
   contact_person?: string;
   email?: string;
   social_media?: string;
+  // Document fields
   nic_proof?: string;
   dob_proof?: string;
   business_registration?: string;
+  business_registration_proof?: string;
   svat_proof?: string;
   vat_proof?: string;
+  coverage_proof?: string;
+  sum_insured_proof?: string;
+  policy_fee_invoice?: string;
+  vat_debit_note?: string;
+  payment_receipt?: string;
+  // Policy fields
   policy_type?: string;
   policy_no?: string;
   policy_period_from?: string;
@@ -44,13 +52,11 @@ export interface Client {
   vat_fee?: number;
   total_invoice?: number;
   debit_note?: string;
-  payment_receipt?: string;
+  // Commission fields
   commission_type?: string;
   commission_basic?: number;
   commission_srcc?: number;
   commission_tc?: number;
-  sales_rep_id?: number;
-  salesRep?: string;
   policies?: number;
 }
 
@@ -69,6 +75,29 @@ const apiClient = axios.create({
 
 // Add token to requests
 apiClient.interceptors.request.use(
+  (config) => {
+    const token = authService.getToken();
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Create FormData API client for file uploads
+const formDataApiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+});
+
+// Add token to FormData requests
+formDataApiClient.interceptors.request.use(
   (config) => {
     const token = authService.getToken();
     if (token) {
@@ -110,14 +139,6 @@ export const clientService = {
       // Create a clean copy of the data
       const cleanedData = { ...clientData };
       
-      // Make sure sales_rep_id is a number if present
-      if (cleanedData.salesRep && !cleanedData.sales_rep_id) {
-        cleanedData.sales_rep_id = parseInt(cleanedData.salesRep);
-      }
-      
-      // Remove salesRep field as it's not in the database
-      delete cleanedData.salesRep;
-      
       // Ensure we're not sending an empty ID
       if (!cleanedData.id || cleanedData.id === '') {
         delete cleanedData.id;
@@ -138,14 +159,6 @@ export const clientService = {
       
       // Create a clean copy of the data
       const cleanedData = { ...clientData };
-      
-      // Make sure sales_rep_id is a number if present
-      if (cleanedData.salesRep && !cleanedData.sales_rep_id) {
-        cleanedData.sales_rep_id = parseInt(cleanedData.salesRep);
-      }
-      
-      // Remove salesRep field as it's not in the database
-      delete cleanedData.salesRep;
       
       // Remove the id field from the update data (we're using it in the URL)
       delete cleanedData.id;
@@ -176,12 +189,50 @@ export const clientService = {
     }
   },
 
-  async getClientsBySalesRep(salesRepId: number): Promise<Client[]> {
+  // New methods for handling document uploads
+  async createClientWithDocuments(formData: FormData): Promise<string> {
     try {
-      const response = await apiClient.get<ApiResponse<Client[]>>(`/clients/sales-rep/${salesRepId}`);
-      return response.data.data;
+      console.log('Creating client with documents');
+      
+      const response = await formDataApiClient.post<ApiResponse<{id: string}>>('/clients/with-documents', formData);
+      console.log('Create client with documents response:', response.data);
+      return response.data.data.id;
     } catch (error) {
-      console.error(`Error fetching clients for sales rep ${salesRepId}:`, error);
+      console.error('Error creating client with documents:', error);
+      throw error;
+    }
+  },
+
+  async updateClientWithDocuments(id: string, formData: FormData): Promise<void> {
+    try {
+      console.log(`Updating client ${id} with documents`);
+      
+      await formDataApiClient.put(`/clients/${id}/with-documents`, formData);
+    } catch (error) {
+      console.error(`Error updating client ${id} with documents:`, error);
+      throw error;
+    }
+  },
+
+  async uploadDocument(clientId: string, documentType: string, file: File): Promise<string> {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('documentType', documentType);
+      
+      const response = await formDataApiClient.post<ApiResponse<{documentUrl: string}>>(`/clients/${clientId}/documents`, formData);
+      return response.data.data.documentUrl;
+    } catch (error) {
+      console.error(`Error uploading document for client ${clientId}:`, error);
+      throw error;
+    }
+  },
+
+  async deleteDocument(clientId: string, documentType: string): Promise<void> {
+    try {
+      await apiClient.delete(`/clients/${clientId}/documents/${documentType}`);
+    } catch (error) {
+      console.error(`Error deleting document for client ${clientId}:`, error);
       throw error;
     }
   }

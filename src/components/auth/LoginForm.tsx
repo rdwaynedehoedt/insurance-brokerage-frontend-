@@ -13,7 +13,6 @@ export default function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -24,12 +23,6 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    // Check if there's a "from" parameter, indicating a redirect
-    const from = searchParams.get('from');
-    if (from) {
-      setError(`Please log in to access ${from}`);
-    }
-
     // Security check for credentials in URL
     const hasEmailInUrl = searchParams.has('email');
     const hasPasswordInUrl = searchParams.has('password');
@@ -90,7 +83,7 @@ export default function LoginForm() {
       await login({
         email: formData.email,
         password: formData.password,
-      }, formData.rememberMe);
+      });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('credentials')) {
@@ -109,10 +102,10 @@ export default function LoginForm() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }));
     // Clear errors when user starts typing
     if (error) setError(null);
@@ -216,32 +209,6 @@ export default function LoginForm() {
             <span>{error}</span>
           </div>
         )}
-      </div>
-
-      <div className="flex items-center justify-between mt-4">
-        <div className="flex items-center">
-          <input
-            id="remember-me"
-            name="rememberMe"
-            type="checkbox"
-            checked={formData.rememberMe}
-            onChange={handleChange}
-            className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-            disabled={isLoading}
-          />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
-            Remember me
-          </label>
-        </div>
-
-        <div className="text-sm">
-          <Link
-            href="/forgot-password"
-            className="font-medium text-orange-700 hover:text-orange-600"
-          >
-            Forgot?
-          </Link>
-        </div>
       </div>
 
       <div className="mt-6">

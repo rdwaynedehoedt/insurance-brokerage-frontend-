@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { clientService, Client as ClientType } from '@/lib/services/clients';
 import { toast } from 'react-hot-toast';
 
@@ -24,6 +24,23 @@ interface ClientErrors {
   policy_no?: string;
   policy_period_from?: string;
   policy_period_to?: string;
+  // Document validation errors
+  coverage_proof?: string;
+  sum_insured_proof?: string;
+  policy_fee_invoice?: string;
+  vat_debit_note?: string;
+  payment_receipt?: string;
+  nic_proof?: string;
+  dob_proof?: string;
+  business_registration_proof?: string;
+  svat_proof?: string;
+  vat_proof?: string;
+}
+
+interface DocumentFile {
+  file: File | null;
+  preview: string | null;
+  filename: string | null;
 }
 
 export default function ClientModal({ isOpen, onClose, client, onClientSaved }: ClientModalProps) {
@@ -75,12 +92,163 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
     commission_tc: 0,
     policies: 0
   });
+  
+  const [documents, setDocuments] = useState<{
+    coverage_proof: DocumentFile;
+    sum_insured_proof: DocumentFile;
+    policy_fee_invoice: DocumentFile;
+    vat_debit_note: DocumentFile;
+    payment_receipt: DocumentFile;
+    nic_proof: DocumentFile;
+    dob_proof: DocumentFile;
+    business_registration_proof: DocumentFile;
+    svat_proof: DocumentFile;
+    vat_proof: DocumentFile;
+  }>({
+    coverage_proof: { file: null, preview: null, filename: null },
+    sum_insured_proof: { file: null, preview: null, filename: null },
+    policy_fee_invoice: { file: null, preview: null, filename: null },
+    vat_debit_note: { file: null, preview: null, filename: null },
+    payment_receipt: { file: null, preview: null, filename: null },
+    nic_proof: { file: null, preview: null, filename: null },
+    dob_proof: { file: null, preview: null, filename: null },
+    business_registration_proof: { file: null, preview: null, filename: null },
+    svat_proof: { file: null, preview: null, filename: null },
+    vat_proof: { file: null, preview: null, filename: null }
+  });
+  
   const [errors, setErrors] = useState<ClientErrors>({});
 
   useEffect(() => {
     if (client) {
-      setFormData(client);
+      // Ensure all values are defined to prevent null values
+      setFormData({
+        id: client.id || '',
+        introducer_code: client.introducer_code || '',
+        customer_type: client.customer_type || '',
+        product: client.product || '',
+        policy_: client.policy_ || '',
+        insurance_provider: client.insurance_provider || '',
+        branch: client.branch || '',
+        client_name: client.client_name || '',
+        street1: client.street1 || '',
+        street2: client.street2 || '',
+        city: client.city || '',
+        district: client.district || '',
+        province: client.province || '',
+        telephone: client.telephone || '',
+        mobile_no: client.mobile_no || '',
+        contact_person: client.contact_person || '',
+        email: client.email || '',
+        social_media: client.social_media || '',
+        nic_proof: client.nic_proof || '',
+        dob_proof: client.dob_proof || '',
+        // Use business_registration_proof field first, then fall back to business_registration
+        business_registration: client.business_registration_proof || client.business_registration || '',
+        svat_proof: client.svat_proof || '',
+        vat_proof: client.vat_proof || '',
+        policy_type: client.policy_type || '',
+        policy_no: client.policy_no || '',
+        policy_period_from: client.policy_period_from || '',
+        policy_period_to: client.policy_period_to || '',
+        coverage: client.coverage || '',
+        coverage_proof: client.coverage_proof || '',
+        sum_insured: client.sum_insured || 0,
+        sum_insured_proof: client.sum_insured_proof || '',
+        basic_premium: client.basic_premium || 0,
+        srcc_premium: client.srcc_premium || 0,
+        tc_premium: client.tc_premium || 0,
+        net_premium: client.net_premium || 0,
+        stamp_duty: client.stamp_duty || 0,
+        admin_fees: client.admin_fees || 0,
+        road_safety_fee: client.road_safety_fee || 0,
+        policy_fee: client.policy_fee || 0,
+        policy_fee_invoice: client.policy_fee_invoice || '',
+        vat_fee: client.vat_fee || 0,
+        vat_debit_note: client.vat_debit_note || '',
+        total_invoice: client.total_invoice || 0,
+        debit_note: client.debit_note || '',
+        payment_receipt: client.payment_receipt || '',
+        commission_type: client.commission_type || '',
+        commission_basic: client.commission_basic || 0,
+        commission_srcc: client.commission_srcc || 0,
+        commission_tc: client.commission_tc || 0,
+        policies: client.policies || 0
+      });
+      
+      // If client has document links, set them as previews
+      if (client.nic_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          nic_proof: { ...prev.nic_proof, preview: client.nic_proof as string, filename: extractFilename(client.nic_proof as string) }
+        }));
+      }
+      
+      // Set other document previews
+      if (client.dob_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          dob_proof: { ...prev.dob_proof, preview: client.dob_proof as string, filename: extractFilename(client.dob_proof as string) }
+        }));
+      }
+      
+      if (client.business_registration) {
+        setDocuments(prev => ({
+          ...prev,
+          business_registration_proof: { ...prev.business_registration_proof, preview: client.business_registration as string, filename: extractFilename(client.business_registration as string) }
+        }));
+      }
+      
+      if (client.svat_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          svat_proof: { ...prev.svat_proof, preview: client.svat_proof as string, filename: extractFilename(client.svat_proof as string) }
+        }));
+      }
+      
+      if (client.vat_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          vat_proof: { ...prev.vat_proof, preview: client.vat_proof as string, filename: extractFilename(client.vat_proof as string) }
+        }));
+      }
+      
+      if (client.coverage_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          coverage_proof: { ...prev.coverage_proof, preview: client.coverage_proof as string, filename: extractFilename(client.coverage_proof as string) }
+        }));
+      }
+      
+      if (client.sum_insured_proof) {
+        setDocuments(prev => ({
+          ...prev,
+          sum_insured_proof: { ...prev.sum_insured_proof, preview: client.sum_insured_proof as string, filename: extractFilename(client.sum_insured_proof as string) }
+        }));
+      }
+      
+      if (client.policy_fee_invoice) {
+        setDocuments(prev => ({
+          ...prev,
+          policy_fee_invoice: { ...prev.policy_fee_invoice, preview: client.policy_fee_invoice as string, filename: extractFilename(client.policy_fee_invoice as string) }
+        }));
+      }
+      
+      if (client.vat_debit_note) {
+        setDocuments(prev => ({
+          ...prev,
+          vat_debit_note: { ...prev.vat_debit_note, preview: client.vat_debit_note as string, filename: extractFilename(client.vat_debit_note as string) }
+        }));
+      }
+      
+      if (client.payment_receipt) {
+        setDocuments(prev => ({
+          ...prev,
+          payment_receipt: { ...prev.payment_receipt, preview: client.payment_receipt as string, filename: extractFilename(client.payment_receipt as string) }
+        }));
+      }
     } else {
+      // Reset form data for a new client
       setFormData({
         id: '',
         introducer_code: '',
@@ -129,8 +297,34 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
         commission_tc: 0,
         policies: 0
       });
+      
+      // Reset document state
+      setDocuments({
+        coverage_proof: { file: null, preview: null, filename: null },
+        sum_insured_proof: { file: null, preview: null, filename: null },
+        policy_fee_invoice: { file: null, preview: null, filename: null },
+        vat_debit_note: { file: null, preview: null, filename: null },
+        payment_receipt: { file: null, preview: null, filename: null },
+        nic_proof: { file: null, preview: null, filename: null },
+        dob_proof: { file: null, preview: null, filename: null },
+        business_registration_proof: { file: null, preview: null, filename: null },
+        svat_proof: { file: null, preview: null, filename: null },
+        vat_proof: { file: null, preview: null, filename: null }
+      });
+      
+      // Reset error state
+      setErrors({});
     }
-  }, [client]);
+    
+    // Reset error state whenever the modal opens/closes or client changes
+    setErrors({});
+  }, [client, isOpen]);
+  
+  // Extract filename from URL or path
+  const extractFilename = (path: string): string => {
+    if (!path) return '';
+    return path.split('/').pop() || path.split('\\').pop() || path;
+  };
 
   const validateForm = () => {
     const newErrors: ClientErrors = {};
@@ -172,9 +366,70 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
     if (!formData.policy_period_to) {
       newErrors.policy_period_to = 'Policy end date is required';
     }
+    
+    // Document validations
+    if (!documents.coverage_proof.file && !documents.coverage_proof.preview) {
+      newErrors.coverage_proof = 'Coverage proof document is required';
+    }
+    
+    if (!documents.sum_insured_proof.file && !documents.sum_insured_proof.preview) {
+      newErrors.sum_insured_proof = 'Sum insured proof document is required';
+    }
+    
+    if (!documents.policy_fee_invoice.file && !documents.policy_fee_invoice.preview) {
+      newErrors.policy_fee_invoice = 'Policy fee invoice document is required';
+    }
+    
+    if (!documents.vat_debit_note.file && !documents.vat_debit_note.preview) {
+      newErrors.vat_debit_note = 'VAT debit note document is required';
+    }
+    
+    if (!documents.payment_receipt.file && !documents.payment_receipt.preview) {
+      newErrors.payment_receipt = 'Payment receipt document is required';
+    }
+    
+    if (!documents.nic_proof.file && !documents.nic_proof.preview) {
+      newErrors.nic_proof = 'NIC proof document is required';
+    }
+    
+    if (!documents.dob_proof.file && !documents.dob_proof.preview) {
+      newErrors.dob_proof = 'Date of birth proof document is required';
+    }
+    
+    if (!documents.business_registration_proof.file && !documents.business_registration_proof.preview) {
+      newErrors.business_registration_proof = 'Business registration proof document is required';
+    }
+    
+    if (!documents.svat_proof.file && !documents.svat_proof.preview) {
+      newErrors.svat_proof = 'SVAT proof document is required';
+    }
+    
+    if (!documents.vat_proof.file && !documents.vat_proof.preview) {
+      newErrors.vat_proof = 'VAT proof document is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, documentType: keyof typeof documents) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        setDocuments(prev => ({
+          ...prev,
+          [documentType]: {
+            file: file,
+            preview: reader.result as string,
+            filename: file.name
+          }
+        }));
+      };
+      
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,35 +437,68 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
     
     if (validateForm()) {
       try {
-        // Create a copy of formData with correct mapping
-        const clientData = {
-          ...formData,
-          // Assign a default sales_rep_id of 1 for all clients
-          sales_rep_id: 1
-        };
+        // Create a clean copy of formData without null/undefined values
+        const clientData = { ...formData };
         
         // Make sure to remove the id field for new clients
         if (!client && clientData.id === '') {
           delete clientData.id;
         }
         
-        console.log('Submitting client data:', JSON.stringify(clientData, null, 2));
+        // Create FormData object to handle file uploads
+        const formDataToSend = new FormData();
+        
+        // Append all client data fields
+        Object.entries(clientData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            // Map business_registration to business_registration_proof for consistency
+            if (key === 'business_registration') {
+              formDataToSend.append('business_registration_proof', value.toString());
+            } else {
+              formDataToSend.append(key, value.toString());
+            }
+          }
+        });
+        
+        // Append document files if they exist
+        Object.entries(documents).forEach(([key, value]) => {
+          if (value.file) {
+            formDataToSend.append(key, value.file);
+            console.log(`Appending file for ${key}:`, value.file.name);
+          }
+        });
+        
+        console.log('Submitting client data with documents');
         
         if (client) {
           // Update existing client
-          await clientService.updateClient(client.id as string, clientData);
-          toast.success('Client updated successfully', {
-            duration: 4000,
-            position: 'top-center',
-          });
+          try {
+            await clientService.updateClientWithDocuments(client.id as string, formDataToSend);
+            toast.success('Client updated successfully', {
+              duration: 4000,
+              position: 'top-center',
+            });
+          } catch (updateError: any) {
+            console.error('Detailed update error:', updateError);
+            console.error('Error response:', updateError.response?.data);
+            console.error('Error status:', updateError.response?.status);
+            throw updateError;
+          }
         } else {
           // Create new client
-          const newClientId = await clientService.createClient(clientData as ClientType);
-          console.log('New client created with ID:', newClientId);
-          toast.success(`Client added successfully`, {
-            duration: 4000,
-            position: 'top-center',
-          });
+          try {
+            const newClientId = await clientService.createClientWithDocuments(formDataToSend);
+            console.log('New client created with ID:', newClientId);
+            toast.success(`Client added successfully`, {
+              duration: 4000,
+              position: 'top-center',
+            });
+          } catch (createError: any) {
+            console.error('Detailed create error:', createError);
+            console.error('Error response:', createError.response?.data);
+            console.error('Error status:', createError.response?.status);
+            throw createError;
+          }
         }
         
         // Call the callback function if provided
@@ -219,7 +507,7 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
         }
         
         // Close the modal
-      onClose();
+        onClose();
       } catch (error: any) {
         console.error('Error saving client:', error);
         const errorMessage = error.response?.data?.message || 
@@ -235,6 +523,59 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
         position: 'top-center',
       });
     }
+  };
+  
+  // Reusable file upload component
+  const FileUploadField = ({ 
+    label, 
+    documentKey, 
+    error 
+  }: { 
+    label: string, 
+    documentKey: keyof typeof documents, 
+    error?: string 
+  }) => {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label} *
+        </label>
+        <div className={`border ${error ? 'border-red-500' : 'border-gray-200'} rounded-lg p-2`}>
+          {documents[documentKey].preview ? (
+            <div className="flex items-center justify-between">
+              <div className="text-sm truncate flex-1">{documents[documentKey].filename}</div>
+              <button 
+                type="button" 
+                onClick={() => setDocuments(prev => ({
+                  ...prev, 
+                  [documentKey]: { file: null, preview: null, filename: null }
+                }))}
+                className="text-red-500 hover:text-red-700 ml-2"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                <div className="flex flex-col items-center justify-center text-gray-500">
+                  <Upload className="w-6 h-6 mb-1" />
+                  <p className="text-xs">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 10MB)</p>
+                </div>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange(e, documentKey)} 
+                />
+              </label>
+            </div>
+          )}
+        </div>
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      </div>
+    );
   };
 
   if (!isOpen) return null;
@@ -533,66 +874,69 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
           </div>
 
           <h3 className="font-medium text-lg text-gray-700 border-b pb-2 mt-8">Documents</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                NIC Proof
-              </label>
-              <input
-                type="text"
-                value={formData.nic_proof}
-                onChange={(e) => setFormData({ ...formData, nic_proof: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FileUploadField 
+              label="NIC Proof" 
+              documentKey="nic_proof" 
+              error={errors.nic_proof} 
+            />
+            
+            <FileUploadField 
+              label="Date of Birth Proof" 
+              documentKey="dob_proof" 
+              error={errors.dob_proof} 
+            />
+            
+            <FileUploadField 
+              label="Business Registration Proof" 
+              documentKey="business_registration_proof" 
+              error={errors.business_registration_proof} 
+            />
+            
+            <FileUploadField 
+              label="SVAT Proof" 
+              documentKey="svat_proof" 
+              error={errors.svat_proof} 
+            />
+            
+            <FileUploadField 
+              label="VAT Proof" 
+              documentKey="vat_proof" 
+              error={errors.vat_proof} 
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                DOB Proof
-              </label>
-              <input
-                type="text"
-                value={formData.dob_proof}
-                onChange={(e) => setFormData({ ...formData, dob_proof: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Registration
-              </label>
-              <input
-                type="text"
-                value={formData.business_registration}
-                onChange={(e) => setFormData({ ...formData, business_registration: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                SVAT Proof
-              </label>
-              <input
-                type="text"
-                value={formData.svat_proof}
-                onChange={(e) => setFormData({ ...formData, svat_proof: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                VAT Proof
-              </label>
-              <input
-                type="text"
-                value={formData.vat_proof}
-                onChange={(e) => setFormData({ ...formData, vat_proof: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+          <h3 className="font-medium text-lg text-gray-700 border-b pb-2 mt-8">Policy Documents</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FileUploadField 
+              label="Coverage Proof" 
+              documentKey="coverage_proof" 
+              error={errors.coverage_proof} 
+            />
+            
+            <FileUploadField 
+              label="Sum Insured Proof" 
+              documentKey="sum_insured_proof" 
+              error={errors.sum_insured_proof} 
+            />
+            
+            <FileUploadField 
+              label="Policy Fee Invoice" 
+              documentKey="policy_fee_invoice" 
+              error={errors.policy_fee_invoice} 
+            />
+            
+            <FileUploadField 
+              label="VAT Debit Note" 
+              documentKey="vat_debit_note" 
+              error={errors.vat_debit_note} 
+            />
+            
+            <FileUploadField 
+              label="Payment Receipt" 
+              documentKey="payment_receipt" 
+              error={errors.payment_receipt} 
+            />
           </div>
 
           <h3 className="font-medium text-lg text-gray-700 border-b pb-2 mt-8">Policy Information</h3>
@@ -803,33 +1147,6 @@ export default function ClientModal({ isOpen, onClose, client, onClientSaved }: 
                 type="number"
                 value={formData.total_invoice}
                 onChange={(e) => setFormData({ ...formData, total_invoice: Number(e.target.value) })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-          </div>
-
-          <h3 className="font-medium text-lg text-gray-700 border-b pb-2 mt-8">Payment Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Debit Note
-              </label>
-              <input
-                type="text"
-                value={formData.debit_note}
-                onChange={(e) => setFormData({ ...formData, debit_note: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Receipt
-              </label>
-              <input
-                type="text"
-                value={formData.payment_receipt}
-                onChange={(e) => setFormData({ ...formData, payment_receipt: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
