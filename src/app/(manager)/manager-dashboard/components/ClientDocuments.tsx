@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Client } from '@/lib/services/clients';
 import { Download, Eye, FileText, Folder, FolderOpen } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import DirectDocumentViewer from './DirectDocumentViewer';
 
 interface DocumentItem {
   label: string;
@@ -545,8 +546,8 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
         const directUrl = getDocumentDirectUrl(doc.url);
         if (confirm('Document access failed. Try direct URL as last resort?')) {
           window.open(directUrl, '_blank');
-    }
-  }
+        }
+      }
     } catch (error) {
       toast.dismiss();
       console.error('Error opening document in new window:', error);
@@ -668,12 +669,46 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
     category.documents.some(doc => doc.url !== null)
   );
 
+  // Repair all document paths in one operation
+  async function repairAllDocuments() {
+    try {
+      console.log('[Client Documents] Starting document repair for all clients');
+      toast.loading('Repairing document paths...');
+      
+      const response = await fetch('http://localhost:5000/api/repair-all-documents');
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.dismiss();
+        toast.success(`Fixed ${data.fixedPaths} document paths. Created ${data.createdDirectories} directories.`);
+        
+        // Reload the client to see the changes
+        window.location.reload();
+      } else {
+        toast.dismiss();
+        toast.error('Failed to repair documents: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('[Client Documents] Error repairing documents:', error);
+      toast.dismiss();
+      toast.error('Failed to repair documents. See console for details.');
+    }
+  }
+
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mt-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">Client Documents</h2>
-        <div className="text-sm text-gray-500">
-          {totalDocuments} document{totalDocuments !== 1 ? 's' : ''} uploaded
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-gray-500">
+            {totalDocuments} document{totalDocuments !== 1 ? 's' : ''} uploaded
+          </div>
+          <button
+            onClick={repairAllDocuments}
+            className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+          >
+            Repair Documents
+          </button>
         </div>
       </div>
       
@@ -896,6 +931,28 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
                 Download
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diagnostic Document Viewer (add in admin/development mode only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 border-t pt-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Document Repair Tools</h3>
+          <div className="grid grid-cols-1 gap-4">
+            {documentCategories.flatMap(category => 
+              category.documents
+                .filter(doc => doc.url)
+                .map(doc => (
+                  <div key={`direct-${doc.fieldName}`}>
+                    <DirectDocumentViewer
+                      documentPath={doc.url!}
+                      title={`${doc.label} - Advanced View`}
+                      showDiagnostics={true}
+                    />
+                  </div>
+                ))
+            )}
           </div>
         </div>
       )}

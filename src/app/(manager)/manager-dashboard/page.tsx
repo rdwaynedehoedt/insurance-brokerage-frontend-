@@ -688,11 +688,11 @@ export default function ManagerDashboard() {
   // Filter clients based on search term
   useEffect(() => {
     if (clients.length === 0) return;
-    
+
     const filtered = clients.filter(client => 
-      client.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.mobile_no && client.mobile_no.includes(searchTerm))
-    );
+    client.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.mobile_no && client.mobile_no.includes(searchTerm))
+  );
     setFilteredClients(filtered);
   }, [searchTerm, clients]);
 
@@ -731,113 +731,113 @@ export default function ManagerDashboard() {
       
       {/* Main container */}
       <div className="flex flex-1 h-full overflow-hidden">
-        {/* Left Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-orange-700">Manager Portal</h1>
-          </div>
-          
-          <nav className="mt-6">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-all duration-300 ${
-                    activeTab === item.id
-                      ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-r-4 border-orange-700 shadow-sm'
-                      : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                  }`}
-                >
-                  <Icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+      {/* Left Sidebar */}
+      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-orange-700">Manager Portal</h1>
+        </div>
+        
+        <nav className="mt-6">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-all duration-300 ${
+                  activeTab === item.id
+                    ? 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-r-4 border-orange-700 shadow-sm'
+                    : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <Icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
-          <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
-            <button 
-              onClick={handleLogout}
-              className="flex items-center text-gray-600 hover:text-orange-700 transition-colors duration-300"
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              Logout
-            </button>
-          </div>
-        </aside>
+        <div className="absolute bottom-0 w-full p-6 border-t border-gray-200">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center text-gray-600 hover:text-orange-700 transition-colors duration-300"
+          >
+            <LogOut className="w-5 h-5 mr-3" />
+            Logout
+          </button>
+        </div>
+      </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 ml-64">
-          <header className="bg-white border-b border-gray-200 px-8 py-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  {menuItems.find(item => item.id === activeTab)?.label}
-                </h2>
-                <p className="text-gray-600 mt-1">Welcome back, Manager!</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="inline-block px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">
-                  Manager
-                </span>
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-orange-700" />
-                </div>
+      {/* Main Content */}
+      <main className="flex-1 ml-64">
+        <header className="bg-white border-b border-gray-200 px-8 py-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">
+                {menuItems.find(item => item.id === activeTab)?.label}
+              </h2>
+              <p className="text-gray-600 mt-1">Welcome back, Manager!</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="inline-block px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm font-medium">
+                Manager
+              </span>
+              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                <Users className="w-6 h-6 text-orange-700" />
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <div className="p-8">
-            {/* Commenting out Overview section 
-            {activeTab === 'overview' && (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center">
-                      <div className="p-3 bg-orange-50 rounded-lg mr-4">
-                        <Users className="w-6 h-6 text-orange-700" />
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Total Clients</span>
-                        <div className="text-2xl font-bold text-gray-900">{clients.length}</div>
-                      </div>
+        <div className="p-8">
+          {/* Commenting out Overview section 
+          {activeTab === 'overview' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <div className="flex items-center">
+                    <div className="p-3 bg-orange-50 rounded-lg mr-4">
+                      <Users className="w-6 h-6 text-orange-700" />
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-600">Total Clients</span>
+                      <div className="text-2xl font-bold text-gray-900">{clients.length}</div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-            */}
+            </div>
+          )}
+          */}
 
-            {/* All Clients Tab */}
-            {activeTab === 'clients' && (
-              <div className="space-y-6">
-                {/* Search and Filters */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="relative w-full md:w-64">
-                    <input
-                      type="text"
-                      placeholder="Search clients..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleAddClient}
-                      className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-300 shadow-sm hover:shadow"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Client
-                    </button>
-                  </div>
+          {/* All Clients Tab */}
+          {activeTab === 'clients' && (
+            <div className="space-y-6">
+              {/* Search and Filters */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="relative w-full md:w-64">
+                  <input
+                    type="text"
+                    placeholder="Search clients..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                 </div>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleAddClient}
+                    className="flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all duration-300 shadow-sm hover:shadow"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Client
+                  </button>
+                  </div>
+              </div>
 
-                {/* Clients Table - Only show when View button is clicked */}
+              {/* Clients Table - Only show when View button is clicked */}
                 <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">
                     {isLoading ? (
@@ -906,109 +906,109 @@ export default function ManagerDashboard() {
                     )}
                   </div>
                 </div>
-              </div>
-            )}
+            </div>
+          )}
 
-            {/* Reports Tab */}
-            {activeTab === 'reports' && (
-              <div className="space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Generate Reports</h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Generate customized reports based on client data. You can filter by date range and choose the type of report that best suits your needs.
-                  </p>
+          {/* Reports Tab */}
+          {activeTab === 'reports' && (
+            <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Generate Reports</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Generate customized reports based on client data. You can filter by date range and choose the type of report that best suits your needs.
+                </p>
+                
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="border rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex items-center mb-3">
+                      <div className="p-2 bg-blue-100 rounded-md mr-3">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h4 className="font-medium">Client List</h4>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Comprehensive list of all clients with their basic information and contact details.
+                    </p>
+                    <button 
+                      onClick={handleOpenReportModal}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-300 hover:underline flex items-center group"
+                    >
+                      Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    </button>
+                  </div>
                   
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="border rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center mb-3">
-                        <div className="p-2 bg-blue-100 rounded-md mr-3">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <h4 className="font-medium">Client List</h4>
+                  <div className="border rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex items-center mb-3">
+                      <div className="p-2 bg-green-100 rounded-md mr-3">
+                        <FileText className="h-5 w-5 text-green-600" />
                       </div>
-                      <p className="text-sm text-gray-500 mb-4">
-                        Comprehensive list of all clients with their basic information and contact details.
-                      </p>
-                      <button 
-                        onClick={handleOpenReportModal}
-                        className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-300 hover:underline flex items-center group"
-                      >
-                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
-                      </button>
+                      <h4 className="font-medium">Financial Summary</h4>
                     </div>
-                    
-                    <div className="border rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center mb-3">
-                        <div className="p-2 bg-green-100 rounded-md mr-3">
-                          <FileText className="h-5 w-5 text-green-600" />
-                        </div>
-                        <h4 className="font-medium">Financial Summary</h4>
+                    <p className="text-sm text-gray-500 mb-4">
+                      Summary of financial data including premiums, commissions and total invoices.
+                    </p>
+                    <button 
+                      onClick={handleOpenReportModal}
+                      className="text-sm text-green-600 hover:text-green-800 transition-colors duration-300 hover:underline flex items-center group"
+                    >
+                      Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    </button>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex items-center mb-3">
+                      <div className="p-2 bg-red-100 rounded-md mr-3">
+                        <FileText className="h-5 w-5 text-red-600" />
                       </div>
-                      <p className="text-sm text-gray-500 mb-4">
-                        Summary of financial data including premiums, commissions and total invoices.
-                      </p>
-                      <button 
-                        onClick={handleOpenReportModal}
-                        className="text-sm text-green-600 hover:text-green-800 transition-colors duration-300 hover:underline flex items-center group"
-                      >
-                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
-                      </button>
-                    </div>
-                    
-                    <div className="border rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center mb-3">
-                        <div className="p-2 bg-red-100 rounded-md mr-3">
-                          <FileText className="h-5 w-5 text-red-600" />
-                        </div>
-                        <h4 className="font-medium">Policy Expiry</h4>
-                  </div>
-                      <p className="text-sm text-gray-500 mb-4">
-                        List of policies with their expiration dates sorted by days remaining.
-                      </p>
-                      <button 
-                        onClick={handleOpenReportModal}
-                        className="text-sm text-red-600 hover:text-red-800 transition-colors duration-300 hover:underline flex items-center group"
-                      >
-                        Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
-                      </button>
-                  </div>
-                  </div>
+                      <h4 className="font-medium">Policy Expiry</h4>
+                </div>
+                    <p className="text-sm text-gray-500 mb-4">
+                      List of policies with their expiration dates sorted by days remaining.
+                    </p>
+                    <button 
+                      onClick={handleOpenReportModal}
+                      className="text-sm text-red-600 hover:text-red-800 transition-colors duration-300 hover:underline flex items-center group"
+                    >
+                      Generate Report <span className="ml-1 transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    </button>
+                </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-        {/* Client Modal */}
-        <ClientModal
+      {/* Client Modal */}
+      <ClientModal
           isOpen={showClientModal}
           onClose={() => setShowClientModal(false)}
-          client={selectedClient}
-          onClientSaved={handleClientSaved}
-        />
+        client={selectedClient}
+            onClientSaved={handleClientSaved}
+          />
 
-        {/* Client Details Modal */}
-        <ClientDetailsModal 
+          {/* Client Details Modal */}
+          <ClientDetailsModal 
           isOpen={clientDetailsModalOpen}
           onClose={() => setClientDetailsModalOpen(false)}
-          client={clientToView}
-        />
+            client={clientToView}
+          />
 
-        {/* Delete Confirmation Modal */}
-        <DeleteConfirmationModal
+          {/* Delete Confirmation Modal */}
+          <DeleteConfirmationModal
           isOpen={deleteConfirmOpen}
           onClose={() => setDeleteConfirmOpen(false)}
-          client={clientToDelete}
-          onConfirm={confirmDeleteClient}
-        />
+            client={clientToDelete}
+            onConfirm={confirmDeleteClient}
+          />
 
-        {/* Report Generator Modal */}
-        <ReportGenerator
+          {/* Report Generator Modal */}
+          <ReportGenerator
           isOpen={showReportModal}
           onClose={() => setShowReportModal(false)}
-          clients={clients}
-        />
-      </div>
-    </main>
+            clients={clients}
+          />
+        </div>
+      </main>
   </div>
-</div>
+    </div>
   );
 } 
