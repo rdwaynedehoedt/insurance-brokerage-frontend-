@@ -213,7 +213,7 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
     if (!url) return null;
     
     try {
-      console.log('Parsing URL:', url);
+      console.log('Parsing document URL:', url);
       
       // Normalize URL by ensuring it has the proper /uploads prefix
       let normalizedUrl = url;
@@ -223,17 +223,17 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
       }
       
       // Handle temporary client IDs (example: /uploads/documents/temp-00a3c650-a706-47ab-8224-2434bdc06d64/filename.jpg)
-      // This is critical as the files are currently stored with temp IDs
+      // This is critical as the files are often stored with temp IDs
       const tempIdMatch = normalizedUrl.match(/\/uploads\/documents\/(temp-[a-f0-9-]+)\/([^\/]+)$/i);
       if (tempIdMatch && tempIdMatch.length === 3) {
         console.log('Found temp client ID:', {
           clientId: tempIdMatch[1],
           filename: tempIdMatch[2]
         });
-          return {
+        return {
           clientId: tempIdMatch[1],
           filename: tempIdMatch[2]
-          };
+        };
       }
       
       // Standard path format: /uploads/documents/client-id/filename
@@ -243,10 +243,10 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
           clientId: standardMatch[1],
           filename: standardMatch[2]
         });
-          return {
+        return {
           clientId: standardMatch[1],
           filename: standardMatch[2]
-          };
+        };
       } 
       
       // Handle direct document paths without uploads prefix
@@ -262,6 +262,20 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
         };
       }
       
+      // Handle root document directory paths
+      const rootDocMatch = normalizedUrl.match(/\/uploads\/documents\/([^\/]+)$/);
+      if (rootDocMatch && rootDocMatch.length === 2 && client?.id) {
+        const filename = rootDocMatch[1];
+        console.log('Root document path:', {
+          clientId: client.id,
+          filename
+        });
+        return {
+          clientId: client.id as string,
+          filename
+        };
+      }
+      
       // If we have a client ID from props, use that with the filename
       const lastSlashIndex = normalizedUrl.lastIndexOf('/');
       if (lastSlashIndex !== -1 && client?.id) {
@@ -270,22 +284,28 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
           clientId: client.id,
           filename
         });
-          return {
+        return {
           clientId: client.id as string,
           filename
-          };
+        };
       }
       
-      // Last resort fallback: try to extract any filename and use the client ID if available
+      // Last resort: Try to extract the filename and use it with the client ID
+      // This is a fallback when URL doesn't match expected patterns
       const filename = extractFileName(normalizedUrl);
-      console.log('Last resort filename extraction:', {
-        clientId: client.id || 'unknown',
-        filename
-      });
-      return {
-        clientId: client.id as string || 'unknown',
-        filename
-      };
+      if (filename && client?.id) {
+        console.log('Last resort with client ID and filename:', {
+          clientId: client.id,
+          filename
+        });
+        return {
+          clientId: client.id as string,
+          filename
+        };
+      }
+      
+      console.error('Failed to parse document URL:', url);
+      return null;
     } catch (error) {
       console.error('Error parsing document URL:', error);
       return null;
@@ -398,70 +418,61 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
   }
 
   function downloadDocument(url: string, fileName: string) {
-    if (!url) return;
+    if (!url) {
+      toast.error('No document URL provided');
+      return;
+    }
     
     try {
-      console.log('Document download URL:', url);
+      console.log('Starting document download:', url);
+      toast.loading('Preparing download...');
       
       // Get base URL without /api
       const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
       
-      // For direct access to a static file in uploads directory
-      if (url.startsWith('/uploads/')) {
-        console.log('Direct URL access to static file');
-        const directUrl = `${baseUrl}${url}`;
-        console.log('Accessing:', directUrl);
-        
-        // Create a temporary anchor to trigger download
-        const link = document.createElement('a');
-        link.href = directUrl;
-        link.setAttribute('download', fileName || extractFileName(url));
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        return;
-      }
-      
-      // Try parsing the URL to use the API endpoint
+      // Parse the document URL to extract client ID and filename
       const urlInfo = parseDocumentUrl(url);
-      console.log('Download parsed URL info:', urlInfo);
       
       if (!urlInfo) {
         console.error('Could not parse document URL for download:', url);
-        toast.error('Failed to download document: Invalid URL');
+        toast.dismiss();
+        toast.error('Failed to download: Invalid document path');
         return;
       }
       
       // Create download URL through the API endpoint
       const downloadUrl = `${baseUrl}/api/clients/${urlInfo.clientId}/documents/${urlInfo.filename}/download`;
-      console.log('Created API download URL:', downloadUrl);
-      
-      // Create a temporary anchor to trigger download
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', fileName || urlInfo.filename || 'document');
+      console.log('Using API download URL:', downloadUrl);
       
       // Add auth token to the link for secure download
       const token = localStorage.getItem('auth_token');
-      if (token) {
-        const separator = downloadUrl.includes('?') ? '&' : '?';
-        link.href = `${downloadUrl}${separator}token=${token}`;
-      }
+      const finalUrl = token ? `${downloadUrl}?token=${token}` : downloadUrl;
       
+      // Create a temporary anchor to trigger download
+      const link = document.createElement('a');
+      link.href = finalUrl;
+      link.setAttribute('download', fileName || urlInfo.filename || 'document');
+      link.setAttribute('target', '_blank');
       document.body.appendChild(link);
+      
+      // Trigger the download and clean up
       link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        document.body.removeChild(link);
+        toast.dismiss();
+        toast.success('Download started');
+      }, 100);
     } catch (error) {
       console.error('Error downloading document:', error);
+      toast.dismiss();
       toast.error('Failed to download document');
       
-      // Last resort fallback - try direct access with full URL
+      // Last resort fallback - try direct window open
       try {
         const directUrl = getDocumentDirectUrl(url);
         window.open(directUrl, '_blank');
       } catch (fallbackError) {
         console.error('Fallback download also failed:', fallbackError);
-        toast.error('Could not access document');
       }
     }
   }
@@ -695,6 +706,201 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
     }
   }
 
+  // Add this after the downloadDocument function
+  async function getDirectDownloadLink(docInfo: DocumentItem): Promise<string | null> {
+    if (!docInfo.url || !client?.id) {
+      console.error('Missing document URL or client ID');
+      return null;
+    }
+    
+    try {
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+      const fieldName = docInfo.fieldName;
+      const token = localStorage.getItem('auth_token');
+      
+      console.log('Getting direct download link with token:', token ? 'Present (not shown)' : 'Missing');
+      
+      // Check if token exists
+      if (!token) {
+        console.error('No authentication token found in localStorage');
+        toast.error('Authentication error - please try logging in again');
+        return null;
+      }
+      
+      // Try using the direct download URL approach first
+      const downloadUrl = `${baseUrl}${docInfo.url}`;
+      console.log('Using direct file URL as fallback:', downloadUrl);
+      return downloadUrl;
+      
+      /* Commenting out API approach for now and using direct URL
+      // Get the direct download link from API
+      const response = await fetch(`${baseUrl}/api/clients/${client.id}/documents/${fieldName}/direct-link`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        console.error(`API error ${response.status}: ${response.statusText}`);
+        // Try using URL directly as fallback
+        const downloadUrl = `${baseUrl}${docInfo.url}`;
+        console.log('Using direct file URL as fallback:', downloadUrl);
+        return downloadUrl;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.downloadUrl) {
+        console.log('Got direct download link:', data.downloadUrl);
+        return data.downloadUrl;
+      } else {
+        console.error('Error in download link response:', data);
+        return null;
+      }
+      */
+    } catch (error) {
+      console.error('Error getting direct download link:', error);
+      
+      // Fallback to direct URL approach
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+      const downloadUrl = `${baseUrl}${docInfo.url}`;
+      console.log('Using direct file URL as fallback after error:', downloadUrl);
+      return downloadUrl;
+    }
+  }
+  
+  // Add this helper function to download files using Blob
+  async function downloadUsingBlob(url: string, filename: string) {
+    try {
+      console.log(`Downloading file from ${url} as ${filename}`);
+      toast.loading('Downloading file...');
+      
+      // Add auth token if available and only if it's an API endpoint
+      const token = localStorage.getItem('auth_token');
+      const headers: HeadersInit = {};
+      if (token && url.includes('/api/')) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Fetch the file
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        console.error(`Download failed: ${response.status} ${response.statusText}`);
+        
+        // If unauthorized and we have a token, the token might be invalid
+        if (response.status === 401 && token) {
+          toast.dismiss();
+          toast.error('Authentication error - please try logging in again');
+          return false;
+        }
+        
+        // For other errors, we'll try a window.open approach instead
+        toast.dismiss();
+        toast.error('Download failed, trying alternative method...');
+        
+        // Try direct window.open as a fallback
+        window.open(url, '_blank');
+        return true;
+      }
+      
+      // Get content type to determine how to handle the response
+      const contentType = response.headers.get('content-type') || '';
+      
+      // Special handling for JSON responses (likely errors)
+      if (contentType.includes('application/json')) {
+        const jsonData = await response.json();
+        console.error('Server returned JSON instead of file:', jsonData);
+        toast.dismiss();
+        
+        if (jsonData.message) {
+          toast.error(`Server error: ${jsonData.message}`);
+        } else {
+          toast.error('Server returned an error response');
+        }
+        
+        return false;
+      }
+      
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // If the blob is too small, it might be an error
+      if (blob.size < 100) {
+        console.warn('Downloaded file is suspiciously small:', blob.size, 'bytes');
+      }
+      
+      // Create a temporary URL for the blob
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Create a link element
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename);
+      
+      // Add the link to the document, click it, and then remove it
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.dismiss();
+      toast.success('Download complete');
+      return true;
+    } catch (error) {
+      console.error('Error downloading file using Blob:', error);
+      toast.dismiss();
+      toast.error('Download failed');
+      
+      // Try window.open as a last resort
+      try {
+        window.open(url, '_blank');
+        return true;
+      } catch (e) {
+        console.error('Window.open fallback also failed:', e);
+        return false;
+      }
+    }
+  }
+  
+  // Add this new method that combines multiple download techniques
+  async function advancedDownload(doc: DocumentItem) {
+    if (!doc.url) {
+      toast.error('Document URL is missing');
+      return;
+    }
+    
+    try {
+      // First approach: Try direct URL for simplicity
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+      const directUrl = `${baseUrl}${doc.url}`;
+      
+      console.log('Attempting download with direct URL:', directUrl);
+      
+      // Try blob download first (most reliable)
+      const blobSuccess = await downloadUsingBlob(directUrl, doc.fileName || 'document');
+      if (blobSuccess) {
+        console.log('Download completed using Blob method');
+        return;
+      }
+      
+      // If blob download failed, try window.open as fallback
+      console.log('Blob download failed, trying window.open');
+      window.open(directUrl, '_blank');
+      
+      // No need to try API method right now since it's having authentication issues
+    } catch (error) {
+      console.error('Advanced download failed:', error);
+      toast.error('Download failed, please try again');
+      
+      // Final fallback - try direct URL in a new tab
+      const directUrl = getDocumentDirectUrl(doc.url);
+      window.open(directUrl, '_blank');
+    }
+  }
+
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mt-6">
       <div className="flex justify-between items-center mb-4">
@@ -705,9 +911,10 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
           </div>
           <button
             onClick={repairAllDocuments}
-            className="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition-colors"
+            title="Fix document access issues by repairing document paths and creating missing directories"
           >
-            Repair Documents
+            Fix Access Issues
           </button>
         </div>
       </div>
@@ -765,7 +972,7 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
                                   <Eye className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => downloadDocument(doc.url!, doc.fileName || 'document')}
+                                  onClick={() => advancedDownload(doc)}
                                   className="p-1 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded"
                                   title="Download document"
                                 >
@@ -924,35 +1131,13 @@ export default function ClientDocuments({ client }: ClientDocumentsProps) {
             </div>
             <div className="flex justify-end p-4 border-t">
               <button
-                onClick={() => downloadDocument(previewDoc.url!, previewDoc.fileName || 'document')}
+                onClick={() => advancedDownload(previewDoc)}
                 className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
                 Download
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Diagnostic Document Viewer (add in admin/development mode only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-8 border-t pt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Document Repair Tools</h3>
-          <div className="grid grid-cols-1 gap-4">
-            {documentCategories.flatMap(category => 
-              category.documents
-                .filter(doc => doc.url)
-                .map(doc => (
-                  <div key={`direct-${doc.fieldName}`}>
-                    <DirectDocumentViewer
-                      documentPath={doc.url!}
-                      title={`${doc.label} - Advanced View`}
-                      showDiagnostics={true}
-                    />
-                  </div>
-                ))
-            )}
           </div>
         </div>
       )}
